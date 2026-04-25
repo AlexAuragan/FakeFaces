@@ -23,12 +23,12 @@ cuda = [
 
 [tool.uv.sources]
 torch = [
-    { index = "pytorch-rocm", extra = "rocm" },
-    { index = "pytorch-cuda", extra = "cuda" },
+    { index = "pytorch-rocm", extra = "rocm", marker = "extra == 'rocm'" },
+    { index = "pytorch-cuda", extra = "cuda", marker = "extra == 'cuda'" },
 ]
 torchvision = [
-    { index = "pytorch-rocm", extra = "rocm" },
-    { index = "pytorch-cuda", extra = "cuda" },
+    { index = "pytorch-rocm", extra = "rocm", marker = "extra == 'rocm'" },
+    { index = "pytorch-cuda", extra = "cuda", marker = "extra == 'cuda'" },
 ]
 pytorch-triton-rocm = { index = "pytorch-rocm", extra = "rocm" }
 
