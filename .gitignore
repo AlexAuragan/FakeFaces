@@ -1,0 +1,6 @@
+/.venv/
+/data/
+/models/
+/wandb/
+/uv.lock
+/.env
