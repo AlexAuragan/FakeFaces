@@ -4,3 +4,5 @@
 /wandb/
 /uv.lock
 /.env
+/.idea/
+/__pycache__/
