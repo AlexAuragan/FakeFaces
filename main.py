@@ -30,7 +30,7 @@ model_config = {
 
 training_config = {
     "starting_epoch": 0,
-    "number_epochs": 30,
+    "number_epochs": 100,
     "learning_rate_disc": 0.0002,
     "learning_rate_gan": 0.0002,
     "latent_points": torch.tensor(LATENT_POINTS, dtype=torch.float32),

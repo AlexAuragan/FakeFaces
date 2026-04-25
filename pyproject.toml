@@ -20,15 +20,20 @@ cuda = [
     "torch",
     "torchvision",
 ]
+[tool.uv]
+conflicts = [
+    [{ extra = "cuda" }, { extra = "rocm" }],
+]
+prerelease = "allow"
 
 [tool.uv.sources]
 torch = [
-    { index = "pytorch-rocm", extra = "rocm", marker = "extra == 'rocm'" },
-    { index = "pytorch-cuda", extra = "cuda", marker = "extra == 'cuda'" },
+    { index = "pytorch-rocm", extra = "rocm"},
+    { index = "pytorch-cuda", extra = "cuda"},
 ]
 torchvision = [
-    { index = "pytorch-rocm", extra = "rocm", marker = "extra == 'rocm'" },
-    { index = "pytorch-cuda", extra = "cuda", marker = "extra == 'cuda'" },
+    { index = "pytorch-rocm", extra = "rocm"},
+    { index = "pytorch-cuda", extra = "cuda"},
 ]
 pytorch-triton-rocm = { index = "pytorch-rocm", extra = "rocm" }
 
