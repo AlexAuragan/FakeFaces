@@ -34,10 +34,11 @@ training_config = {
     "learning_rate_disc": 0.0002,
     "learning_rate_gan": 0.0002,
     "latent_points": torch.tensor(LATENT_POINTS, dtype=torch.float32),
-    "model_directory": "models/run_4",
+    "model_directory": "models/run_5",
     "sanity_check": False,
     "verbose": 1,
     "learning_rate_weight_strength": 0.5,
+    "r1_batch_mod": 16,
 }
 
 if __name__ == "__main__":

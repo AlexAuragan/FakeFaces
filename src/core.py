@@ -157,13 +157,24 @@ def train_epoch(g_model, d_model, g_optimizer, d_optimizer, g_scaler, d_scaler, 
         real_labels = torch.ones(len(batch), 1).cuda() - 0.15 * torch.rand(len(batch), 1, device="cuda")
         fake_labels = torch.zeros(len(batch), 1).cuda()
 
-        # --- discriminator (fused real + fake in one backward pass) ---
+        # --- discriminator ---
+        batch.requires_grad_(True)
         X_fake = generate_fake_samples(g_model, latent_dim, len(batch))
         d_optimizer.zero_grad()
-        with torch.autocast(device_type="cuda"):
-            d_loss_real = criterion(d_model(batch), real_labels)
-            d_loss_fake = criterion(d_model(X_fake), fake_labels)
+        d_real_out = d_model(batch)
+        d_loss_real = criterion(d_real_out, real_labels)
+        d_loss_fake = criterion(d_model(X_fake), fake_labels)
+
+        # R1 gradient penalty every r1_batch_mod steps
+        if global_step % training_config["r1_batch_mod"] == 0:
+            grad = torch.autograd.grad(
+                d_real_out.sum(), batch, create_graph=True
+            )[0]
+            r1 = grad.pow(2).flatten(1).sum(1).mean()
+            d_loss = d_loss_real + d_loss_fake + (10.0/2) * 16 * r1
+        else:
             d_loss = d_loss_real + d_loss_fake
+
         d_scaler.scale(d_loss).backward()
         d_scaler.step(d_optimizer)
         d_scaler.update()
@@ -255,7 +266,7 @@ def train(model_config, training_config):
             "learning_rate_gan": training_config["learning_rate_gan"],
             "lr_disc_effective": new_lr_d,
             "lr_gen_effective": new_lr_g,
-        })
+        }, step=global_step)
 
         save_gan(g_model, d_model, g_optimizer, d_optimizer, g_scaler, d_scaler,
                  model_save_directory(training_config["model_directory"], epoch + 1),
