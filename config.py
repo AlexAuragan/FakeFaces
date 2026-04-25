@@ -10,6 +10,6 @@ DATA_DIR = "data/celeba/img_align_celeba_resized"
 LP_PATH = "models/latent_points_dim100"
 
 # Generate latent points seeds to have a point of comparison across epochs.
-LATENT_POINTS = torch.normal(torch.zeros([20, 100]), 1)
-np.save(LP_PATH+".npy",LATENT_POINTS.numpy())
+# LATENT_POINTS = torch.normal(torch.zeros([20, 100]), 1)
+# np.save(LP_PATH+".npy",LATENT_POINTS.numpy())
 LATENT_POINTS = np.load(LP_PATH+".npy")

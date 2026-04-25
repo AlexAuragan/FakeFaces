@@ -19,6 +19,7 @@ rocm = [
 cuda = [
     "torch",
     "torchvision",
+    "triton",
 ]
 [tool.uv]
 conflicts = [
