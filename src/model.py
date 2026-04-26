@@ -79,7 +79,8 @@ class Discriminator(torch.nn.Module): # 5.83M parameters
             torch.nn.LeakyReLU(0.2),
             torch.nn.utils.spectral_norm(
                 torch.nn.Conv2d(dims_out, dims_out, kernel_size=3, padding=1) # dims_out^2 * 9 + dims_out
-            )
+            ),
+            torch.nn.LeakyReLU(0.2),
         )
 
     def __init__(self):
