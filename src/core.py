@@ -171,7 +171,7 @@ def train_epoch(g_model, d_model, g_optimizer, d_optimizer, g_scaler, d_scaler, 
                 d_real_out.sum(), batch, create_graph=True
             )[0]
             r1 = grad.pow(2).flatten(1).sum(1).mean()
-            d_loss = d_loss_real + d_loss_fake + (10.0/2) * 16 * r1
+            d_loss = d_loss_real + d_loss_fake + (10.0/2) * training_config["r1_batch_mod"] * r1
         else:
             d_loss = d_loss_real + d_loss_fake
 

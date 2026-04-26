@@ -96,9 +96,8 @@ class Discriminator(torch.nn.Module): # 5.83M parameters
             self.down_block(256, 512),   # 3.54M
         )
 
-        flat_size = 512
+        flat_size = 512 * 7 * 8  # 28672
         self.classifier = torch.nn.Sequential(
-            torch.nn.AdaptiveAvgPool2d(1),
             torch.nn.Flatten(),
             torch.nn.Dropout(0.4),
             torch.nn.utils.spectral_norm(
