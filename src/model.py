@@ -69,39 +69,44 @@ Linear(100, 28672)     →  100 × 28672        +  28672 =  2,895,872 params
 ---
 
 """
-class Discriminator(torch.nn.Module): # 1.58M parameters
+class Discriminator(torch.nn.Module): # 5.83M parameters
+    @staticmethod
+    def down_block(dims_in, dims_out): # 9 * dims_out * (dims_in + dims_out) + 2 * dims_out
+        return torch.nn.Sequential(
+            torch.nn.utils.spectral_norm(
+                torch.nn.Conv2d(dims_in, dims_out, kernel_size=3, stride=2, padding=1) # dims_in * dims_out * 9 + dims_out
+            ),
+            torch.nn.LeakyReLU(0.2),
+            torch.nn.utils.spectral_norm(
+                torch.nn.Conv2d(dims_out, dims_out, kernel_size=3, padding=1) # dims_out^2 * 9 + dims_out
+            )
+        )
+
     def __init__(self):
         super().__init__()
-        self.features = torch.nn.Sequential(
-            torch.nn.utils.spectral_norm(
-                torch.nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1)
-            ), # 3 * 64 * 3 * 3 + 64 = 1,792
+        self.input = torch.nn.Sequential(
+            torch.nn.utils.spectral_norm(torch.nn.Conv2d(3, 64, kernel_size=3, padding=1)),
             torch.nn.LeakyReLU(0.2),
-            torch.nn.utils.spectral_norm(
-                torch.nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1)
-            ), # 64 * 128 * 3 * 3 + 128 = 73,856
-            torch.nn.LeakyReLU(0.2),
-            torch.nn.utils.spectral_norm(
-                torch.nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1)
-            ), # 128 * 256 * 3 * 3 + 256 = 295,168
-            torch.nn.LeakyReLU(0.2),
-            torch.nn.utils.spectral_norm(
-                torch.nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1)
-            ), # 256 * 512 * 3 * 3 + 512 = 1,180,160
-            torch.nn.LeakyReLU(0.2),
-            torch.nn.Flatten(),
         )
-        # 4 stride-2 convs on 112x128: 112->56->28->14->7, 128->64->32->16->8
-        # flat_size = 512 * 7 * 8 = 28,672
-        dummy = torch.zeros(1, *INPUT_SHAPE)
-        flat_size = self.features(dummy).shape[1]
+        self.features = torch.nn.Sequential(
+            self.down_block(64, 128),    # 221k
+            self.down_block(128, 256),   # 885k
+            self.down_block(256, 256),   # 1.18M
+            self.down_block(256, 512),   # 3.54M
+        )
+
+        flat_size = 512
         self.classifier = torch.nn.Sequential(
+            torch.nn.AdaptiveAvgPool2d(1),
+            torch.nn.Flatten(),
             torch.nn.Dropout(0.4),
-            torch.nn.Linear(flat_size, 1), # 28,672 * 1 + 1 = 28,673
+            torch.nn.utils.spectral_norm(
+                torch.nn.Linear(flat_size, 1),  # 513
+            )
         )
 
     def forward(self, x):
-        return self.classifier(self.features(x))
+        return self.classifier(self.features(self.input(x)))
 
 
 class Reshape(torch.nn.Module):
@@ -113,32 +118,41 @@ class Reshape(torch.nn.Module):
         return x.view(x.size(0), *self.shape)
 
 
-class Generator(torch.nn.Module): # 5.69M parameters
-    def __init__(self, latent_size: int):
+class Generator(torch.nn.Module): # 4.3M parameters
+    @staticmethod
+    def up_block(dims_in, dims_out): # 9 * c_out * (c_in + c_out) + 6 * c_out
+        return torch.nn.Sequential(
+            torch.nn.Upsample(scale_factor=2, mode="nearest"),
+            torch.nn.Conv2d(dims_in, dims_out, kernel_size=3, padding=1), # 9 * dims_in * dims_out + dims_out
+            torch.nn.BatchNorm2d(dims_out), # 2 * c_out
+            torch.nn.LeakyReLU(0.2),
+            torch.nn.Conv2d(dims_out, dims_out, kernel_size=3, padding=1), # 9 * dims_out^2 + dims_out
+            torch.nn.BatchNorm2d(dims_out), # 2 * c_out
+            torch.nn.LeakyReLU(0.2)
+        )
+
+    def __init__(self, latent_size: int): # 4.3M
         super().__init__()
-        n_nodes = 512 * (112 // (2**4)) * (128 // (2**4))  # 512 * 7 * 8 = 28,672
-        self.features = torch.nn.Sequential(
-            torch.nn.Linear(latent_size, n_nodes),              # latent_size * 28,672 + 28,672
-                                                                # e.g. latent=100: 2,895,872
-            torch.nn.LeakyReLU(0.2),
-            Reshape(512, 7, 8),
-            torch.nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1),  # 512 * 256 * 4 * 4 + 256 = 2,097,408
-            torch.nn.BatchNorm2d(256),                          # 256 * 2 = 512
-            torch.nn.LeakyReLU(0.2),
-            torch.nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1),  # 256 * 128 * 4 * 4 + 128 = 524,416
-            torch.nn.BatchNorm2d(128),                          # 128 * 2 = 256
-            torch.nn.LeakyReLU(0.2),
-            torch.nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1),   # 128 * 64 * 4 * 4 + 64 = 131,136
-            torch.nn.BatchNorm2d(64),                           # 64 * 2 = 128
-            torch.nn.LeakyReLU(0.2),
-            torch.nn.ConvTranspose2d(64, 32, kernel_size=4, stride=2, padding=1),    # 64 * 32 * 4 * 4 + 32 = 32,800
-            torch.nn.BatchNorm2d(32),                           # 32 * 2 = 64
+        n_nodes = 256 * (112 // (2**4)) * (128 // (2**4))  # 256 * 7 * 8 = 28,672
+        self.projection = torch.nn.Sequential(
+            torch.nn.Linear(latent_size, n_nodes),  # 1.43M
+            Reshape(256, 7, 8),
+            torch.nn.BatchNorm2d(256),
             torch.nn.LeakyReLU(0.2),
         )
+
+        self.features = torch.nn.Sequential(
+            self.up_block(256, 256), # 1.18M
+            self.up_block(256, 256), # 1.18M
+            self.up_block(256, 256), # 1.8M
+            self.up_block(256, 128), # 444k
+        )
         self.generator = torch.nn.Sequential(
-            torch.nn.ConvTranspose2d(32, 3, kernel_size=7, padding=3),               # 32 * 3 * 7 * 7 + 3 = 4,707
-            torch.nn.Tanh()
+            torch.nn.Conv2d(128, 64, kernel_size=3, padding=1), # 72k
+            torch.nn.LeakyReLU(0.2),
+            torch.nn.Conv2d(64, 3, kernel_size=1),
+            torch.nn.Tanh(),
         )
 
     def forward(self, x):
-        return self.generator(self.features(x))
+        return self.generator(self.features(self.projection(x)))

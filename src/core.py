@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from tqdm import tqdm
 
-from config import DATA_DIR
+from config import DATA_DIR, LATENT_POINTS
 from src.model import Generator, Discriminator
 
 
@@ -257,7 +257,7 @@ def train(model_config, training_config):
         for i in range(min(5, len(latent_points))):
             img = X[i].permute(1, 2, 0).numpy()
             imageio.imwrite(os.path.join(samples_dir, f"sample_{i+1}_epoch_{epoch+1:04d}.png"), img)
-        samples = {f"samples_{i+1}": wandb.Image(X[i].permute(1, 2, 0).numpy(), caption=f"sample {i+1}, epoch {epoch+1}") for i in range(5)}
+        samples = {f"samples_{i+1}": wandb.Image(X[i].permute(1, 2, 0).numpy(), caption=f"sample {i+1}, epoch {epoch+1}") for i in range(len(LATENT_POINTS))}
         wandb.log({
             **samples,
             "duration": delta_time,
