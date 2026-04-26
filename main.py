@@ -19,7 +19,7 @@ training_config = {
     "learning_rate_disc": 0.0004,
     "learning_rate_gan": 0.0002,
     "latent_points": torch.tensor(LATENT_POINTS, dtype=torch.float32),
-    "model_directory": "models/run_6",
+    "model_directory": "models/run_7",
     "sanity_check": False,
     "verbose": 1,
     "learning_rate_weight_strength": 0.5,
