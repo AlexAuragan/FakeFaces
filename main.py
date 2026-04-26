@@ -17,7 +17,7 @@ training_config = {
     "starting_epoch": 0,
     "number_epochs": 100,
     "learning_rate_disc": 0.0004,
-    "learning_rate_gan": 0.0002,
+    "learning_rate_gan": 0.0004,
     "latent_points": torch.tensor(LATENT_POINTS, dtype=torch.float32),
     "model_directory": "models/run_7",
     "sanity_check": False,
