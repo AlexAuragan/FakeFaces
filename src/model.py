@@ -100,9 +100,7 @@ class Discriminator(torch.nn.Module): # 2.38M parameters
         self.classifier = torch.nn.Sequential(
             torch.nn.Flatten(),
             torch.nn.Dropout(0.4),
-            torch.nn.utils.spectral_norm(
-                torch.nn.Linear(flat_size, 1),  # 14337
-            )
+            torch.nn.Linear(flat_size, 1),
         )
 
     def forward(self, x):
