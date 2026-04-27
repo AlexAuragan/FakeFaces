@@ -69,7 +69,7 @@ Linear(100, 28672)     →  100 × 28672        +  28672 =  2,895,872 params
 ---
 
 """
-class Discriminator(torch.nn.Module): # 5.83M parameters
+class Discriminator(torch.nn.Module): # 2.38M parameters
     @staticmethod
     def down_block(dims_in, dims_out): # 9 * dims_out * (dims_in + dims_out) + 2 * dims_out
         return torch.nn.Sequential(
@@ -90,18 +90,18 @@ class Discriminator(torch.nn.Module): # 5.83M parameters
             torch.nn.LeakyReLU(0.2),
         )
         self.features = torch.nn.Sequential(
+            self.down_block(64, 64),     # 74k
             self.down_block(64, 128),    # 221k
             self.down_block(128, 256),   # 885k
             self.down_block(256, 256),   # 1.18M
-            self.down_block(256, 512),   # 3.54M
         )
 
-        flat_size = 512 * 7 * 8  # 28672
+        flat_size = 256 * 7 * 8  # 14336
         self.classifier = torch.nn.Sequential(
             torch.nn.Flatten(),
             torch.nn.Dropout(0.4),
             torch.nn.utils.spectral_norm(
-                torch.nn.Linear(flat_size, 1),  # 513
+                torch.nn.Linear(flat_size, 1),  # 14337
             )
         )
 
